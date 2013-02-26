@@ -4,7 +4,9 @@
 #define ULTRA
 #define TEN
 //#define BUF_SIZE 4096
-#define BUF_SIZE 1024
+#define BUF_SIZE 8192
+#define VERBOSITY_LEVEL 1
+//#define BUF_SIZE 1024
 
 #include <iostream>
 #include <sys/time.h>
@@ -18,7 +20,7 @@ using namespace std;
 
 #define STRINGIFY(src) #src
 
-#define kernel_header "typedef struct tag_UltraFloat{float mantissa; int base; int exponent;} UltraFloat; typedef struct tag_TenFloat{float mantissa; int exponent;} TenFloat;"
+#define kernel_header "#pragma OPENCL EXTENSION cl_khr_fp64 : enable \n typedef struct tag_UltraFloat{float mantissa; int base; int exponent;} UltraFloat; typedef struct tag_TenFloat{float mantissa; int exponent;} TenFloat;"
 
 inline const char* Kernels()
 {
@@ -69,7 +71,9 @@ int main()
     setup_context();
     const char* kernel_name;
     size_t size;
+
     float runtime = 0;
+    timeval t1, t2;
 
 #if defined(FLOAT) || defined(DOUBLE)
     int* exponents = new int[BUF_SIZE];
@@ -79,7 +83,39 @@ int main()
     }
 #endif
 
+    // ******* BURN RUN SO THE FIRST ONE DOESN'T SUCK *******
+    float* burn_floatDataset = new float[BUF_SIZE];
+    for (int i = 0; i < BUF_SIZE; i++)
+    {
+        burn_floatDataset[i] = 2;
+    }
+    kernel_name = "floatTest";
+    compile_kernel(kernel_name, float_kernel);
+    size = sizeof(float) * BUF_SIZE;
+
+    gettimeofday(&t1, NULL);
+
+    create_buffer(d_buf1, burn_floatDataset, size);
+    create_buffer(d_buf2, exponents, sizeof(int) * BUF_SIZE);
+    err_num  = clSetKernelArg(float_kernel, 0, sizeof(cl_mem), (void *) &d_buf1);
+    err_num  |= clSetKernelArg(float_kernel, 1, sizeof(cl_mem), (void *) &d_buf2);
+    if (err_num != CL_SUCCESS)
+    {
+        cout << "kernel arg set fail" << endl;
+        exit(err_num);
+    }
+    launch_kernel(float_kernel);
+    read_buffer(d_buf1, burn_floatDataset, size);
+    read_buffer(d_buf2, exponents, sizeof(int) * BUF_SIZE);
+
+    gettimeofday(&t2, NULL);
+    runtime += (t2.tv_sec -t1.tv_sec) * 1000.0;
+    runtime += (t2.tv_usec - t1.tv_usec) / 1000.0;
+
+    // ******* BURN RUN SO THE FIRST ONE DOESN'T SUCK *******
+
 #ifdef FLOAT
+    runtime = 0;
     float* floatDataset = new float[BUF_SIZE];
     for (int i = 0; i < BUF_SIZE; i++)
     {
@@ -89,7 +125,6 @@ int main()
     compile_kernel(kernel_name, float_kernel);
     size = sizeof(float) * BUF_SIZE;
 
-    timeval t1, t2;
     gettimeofday(&t1, NULL);
 
     create_buffer(d_buf1, floatDataset, size);
@@ -109,15 +144,18 @@ int main()
     runtime += (t2.tv_sec -t1.tv_sec) * 1000.0;
     runtime += (t2.tv_usec - t1.tv_usec) / 1000.0;
 
-    cout << "Float results:" << endl;
-    for (int i = 0; i < BUF_SIZE; i++)
+    if (VERBOSITY_LEVEL > 1)
     {
-        cout << floatDataset[i];
-        cout << "10";
-        cout << exponents[i];
+        cout << "Float results:" << endl;
+        for (int i = 0; i < BUF_SIZE; i++)
+        {
+            cout << floatDataset[i];
+            cout << "10";
+            cout << exponents[i];
+        }
+        cout << endl;
     }
-    cout << endl;
-    cout << "Runtime: " << runtime << endl;
+    cout << "Float runtime: " << runtime << endl;
 #endif
 
 #ifdef DOUBLE
@@ -151,15 +189,18 @@ int main()
     runtime += (t2.tv_sec -t1.tv_sec) * 1000.0;
     runtime += (t2.tv_usec - t1.tv_usec) / 1000.0;
 
-    cout << "Double results:" << endl;
-    for (int i = 0; i < BUF_SIZE; i++)
+    if (VERBOSITY_LEVEL > 1)
     {
-        cout << doubleDataset[i];
-        cout << "10";
-        cout << exponents[i];
+        cout << "Double results:" << endl;
+        for (int i = 0; i < BUF_SIZE; i++)
+        {
+            cout << doubleDataset[i];
+            cout << "10";
+            cout << exponents[i];
+        }
+        cout << endl;
     }
-    cout << endl;
-    cout << "Runtime: " << runtime << endl;
+    cout << "Double runtime: " << runtime << endl;
 #endif
 
 #ifdef ULTRA
@@ -191,15 +232,18 @@ int main()
     runtime += (t2.tv_sec -t1.tv_sec) * 1000.0;
     runtime += (t2.tv_usec - t1.tv_usec) / 1000.0;
 
-    cout << "Ultra dataset" << endl;
-    for (int i = 0; i < BUF_SIZE; i++)
+    if (VERBOSITY_LEVEL > 1)
     {
-        cout << ultraDataset[i].mantissa;
-        cout << ultraDataset[i].base;
-        cout << ultraDataset[i].exponent;
+        cout << "Ultra dataset" << endl;
+        for (int i = 0; i < BUF_SIZE; i++)
+        {
+            cout << ultraDataset[i].mantissa;
+            cout << ultraDataset[i].base;
+            cout << ultraDataset[i].exponent;
+        }
+        cout << endl;
     }
-    cout << endl;
-    cout << "Runtime: " << runtime << endl;
+    cout << "Ultra runtime: " << runtime << endl;
 #endif
 
 #ifdef TEN
@@ -230,15 +274,18 @@ int main()
     runtime += (t2.tv_sec -t1.tv_sec) * 1000.0;
     runtime += (t2.tv_usec - t1.tv_usec) / 1000.0;
 
-    cout << "Ten dataset" << endl;
-    for (int i = 0; i < BUF_SIZE; i++)
+    if (VERBOSITY_LEVEL > 1)
     {
-        cout << tenDataset[i].mantissa;
-        cout << 10;
-        cout << tenDataset[i].exponent;
+        cout << "Ten dataset" << endl;
+        for (int i = 0; i < BUF_SIZE; i++)
+        {
+            cout << tenDataset[i].mantissa;
+            cout << 10;
+            cout << tenDataset[i].exponent;
+        }
+        cout << endl;
     }
-    cout << endl;
-    cout << "Runtime: " << runtime << endl;
+    cout << "Ten runtime: " << runtime << endl;
 #endif
     return 0;
 }
