@@ -15,10 +15,10 @@ Usage:
 Current Tests:
 --------------
 
-*Float + Exponent Arrays
-*Double + Exponent Arrays
-*Struct with three elements Array
-*Struct with two elements Array
+*   Float + Exponent Arrays
+*   Double + Exponent Arrays
+*   Struct with three elements Array
+*   Struct with two elements Array
 
 Whether or not it makes sense to replace mantissa & exponent arrays with a
 single struct array. This goes for both copying the data to the GPU and
