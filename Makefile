@@ -25,7 +25,9 @@ copy.o: copy.cpp
 	$(CXX) -c -o copy.o copy.cpp
 
 regular: copy.o
-	$(CXX) $(linker_flags) -o copy $^
+	$(CXX) -o copy $^ $(linker_flags)
+
+#$(CXX) $(linker_flags) -o copy $^
 
 ###### ETC ######
 

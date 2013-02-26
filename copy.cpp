@@ -414,8 +414,10 @@ int setup_context()
         cout << "Name fetch fail" << endl;
         exit(err_num);
     }
-    printf("Connecting to %s %s...\n", vendor_name, device_name);
-    printf("Max work group size: %"PRIuPTR"\n", wg_max);
+    //printf("Connecting to %s %s...\n", vendor_name, device_name);
+    cout << "Connecting to " << vendor_name << " " << device_name << "..." << endl;
+    //printf("Max work group size: %"PRIuPTR"\n", wg_max);
+    cout << "Max work group size: " << wg_max << endl;
     local_work_size = wg_max;
 
     // queue setup
@@ -454,7 +456,8 @@ int setup_context()
         clGetProgramBuildInfo(prog, device, CL_PROGRAM_BUILD_LOG, log_size, log, NULL);
 
         // Print the log
-        printf("%s\n", log);
+        //printf("%s\n", log);
+        cout << log << endl;
         exit(err_num);
     }
     return 0;
