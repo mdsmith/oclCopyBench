@@ -10,6 +10,14 @@ else
 linker_flags = -framework OpenCL
 endif
 
+platform_extras = 
+
+ifdef AMDAPPSDKROOT
+platform_includes = $(AMDAPPSDKROOT)/include
+platform_links = $(AMDAPPSDKROOT)/lib
+platform_extras += -I$(platform_includes) -L$(platform_links)
+endif
+
 # omp and clang don't get along
 #all_flags = -O3 -Wall -Werror -Wno-unknown-pragmas
 
@@ -22,7 +30,7 @@ all: regular
 ###### Core Test ######
 
 copy.o: copy.cpp
-	$(CXX) -c -o copy.o copy.cpp
+	$(CXX) -c -o copy.o copy.cpp $(platform_extras)
 
 regular: copy.o
 	$(CXX) -o copy $^ $(linker_flags)

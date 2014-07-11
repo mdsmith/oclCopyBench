@@ -14,7 +14,8 @@
 #if defined(__APPLE__) || defined(APPLE)
     #include <OpenCL/OpenCL.h>
 #else
-    #include <CL/opencl.h>
+    //#include <CL/opencl.h>
+    #include <CL/cl.h>
 #endif
 using namespace std;
 
@@ -382,6 +383,7 @@ int setup_context()
     err_num = clGetDeviceIDs(plat, CL_DEVICE_TYPE_GPU, 0, NULL, &dev_count);
     devices = (cl_device_id *)malloc(dev_count * sizeof(cl_device_id));
     err_num = clGetDeviceIDs(plat, CL_DEVICE_TYPE_GPU, dev_count, devices, NULL);
+
     device = devices[0]; // XXX set back down to 0
     if (err_num != CL_SUCCESS)
     {
