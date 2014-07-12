@@ -1,11 +1,12 @@
 
 #define FLOAT
+#define FLOAT_ZERO
 #define DOUBLE
 #define ULTRA
 #define TEN
 //#define BUF_SIZE 4096
 #define BUF_SIZE 8192
-#define VERBOSITY_LEVEL 1
+#define VERBOSITY_LEVEL 2
 //#define BUF_SIZE 1024
 
 #include <iostream>
@@ -64,6 +65,7 @@ struct TenFloat
 int setup_context();
 int compile_kernel(const char* kernel_name, cl_kernel &kernel);
 int create_buffer(cl_mem &d_buf, void* buffer, size_t size);
+int create_buffer_zero(cl_mem &d_buf, void* buffer, size_t size);
 int launch_kernel(cl_kernel kernel);
 int read_buffer(cl_mem &d_buf, void* data, size_t size);
 
@@ -80,7 +82,7 @@ int main()
     int* exponents = new int[BUF_SIZE];
     for (int i = 0; i < BUF_SIZE; i++)
     {
-        exponents[i] = 0;
+        exponents[i] = 1;
     }
 #endif
 
@@ -120,7 +122,8 @@ int main()
     float* floatDataset = new float[BUF_SIZE];
     for (int i = 0; i < BUF_SIZE; i++)
     {
-        floatDataset[i] = 2;
+        floatDataset[i] = 1;
+        exponents[i] = 1;
     }
     kernel_name = "floatTest";
     compile_kernel(kernel_name, float_kernel);
@@ -148,15 +151,64 @@ int main()
     if (VERBOSITY_LEVEL > 1)
     {
         cout << "Float results:" << endl;
-        for (int i = 0; i < BUF_SIZE; i++)
+        //for (int i = 0; i < BUF_SIZE; i++)
+        for (int i = 0; i < 10; i++)
         {
             cout << floatDataset[i];
-            cout << "10";
+            cout << "x10^";
             cout << exponents[i];
+            cout << " ";
         }
         cout << endl;
     }
     cout << "Float runtime: " << runtime << endl;
+#endif
+
+#ifdef FLOAT_ZERO
+    runtime = 0;
+    float* floatZeroDataset = new float[BUF_SIZE];
+    for (int i = 0; i < BUF_SIZE; i++)
+    {
+        floatZeroDataset[i] = 10;
+        exponents[i] = 1;
+    }
+    kernel_name = "floatTest";
+    compile_kernel(kernel_name, float_kernel);
+    size = sizeof(float) * BUF_SIZE;
+
+    gettimeofday(&t1, NULL);
+
+    create_buffer_zero(d_buf1, floatZeroDataset, size);
+    create_buffer_zero(d_buf2, exponents, sizeof(int) * BUF_SIZE);
+    err_num  = clSetKernelArg(float_kernel, 0, sizeof(cl_mem), (void *) &d_buf1);
+    err_num  |= clSetKernelArg(float_kernel, 1, sizeof(cl_mem), (void *) &d_buf2);
+    if (err_num != CL_SUCCESS)
+    {
+        cout << "kernel arg set fail" << endl;
+        exit(err_num);
+    }
+    launch_kernel(float_kernel);
+    //read_buffer(d_buf1, floatZeroDataset, size);
+    //read_buffer(d_buf2, exponents, sizeof(int) * BUF_SIZE);
+
+    gettimeofday(&t2, NULL);
+    runtime += (t2.tv_sec -t1.tv_sec) * 1000.0;
+    runtime += (t2.tv_usec - t1.tv_usec) / 1000.0;
+
+    if (VERBOSITY_LEVEL > 1)
+    {
+        cout << "Float_Zero results:" << endl;
+        //for (int i = 0; i < BUF_SIZE; i++)
+        for (int i = 0; i < 10; i++)
+        {
+            cout << floatZeroDataset[i];
+            cout << "x10^";
+            cout << exponents[i];
+            cout << " ";
+        }
+        cout << endl;
+    }
+    cout << "Float_Zero runtime: " << runtime << endl;
 #endif
 
 #ifdef DOUBLE
@@ -164,8 +216,8 @@ int main()
     double* doubleDataset = new double[BUF_SIZE];
     for (int i = 0; i < BUF_SIZE; i++)
     {
-        doubleDataset[i] = 3;
-        exponents[i] = 0;
+        doubleDataset[i] = 20;
+        exponents[i] = 1;
     }
     kernel_name = "doubleTest";
     compile_kernel(kernel_name, double_kernel);
@@ -193,11 +245,13 @@ int main()
     if (VERBOSITY_LEVEL > 1)
     {
         cout << "Double results:" << endl;
-        for (int i = 0; i < BUF_SIZE; i++)
+        //for (int i = 0; i < BUF_SIZE; i++)
+        for (int i = 0; i < 10; i++)
         {
             cout << doubleDataset[i];
-            cout << "10";
+            cout << "x10^";
             cout << exponents[i];
+            cout << " ";
         }
         cout << endl;
     }
@@ -209,9 +263,9 @@ int main()
     UltraFloat* ultraDataset = new UltraFloat[BUF_SIZE];
     for (int i = 0; i < BUF_SIZE; i++)
     {
-        ultraDataset[i].mantissa = 4;
+        ultraDataset[i].mantissa = 30;
         ultraDataset[i].base = 10;
-        ultraDataset[i].exponent = 0;
+        ultraDataset[i].exponent = 1;
     }
     kernel_name = "ultraTest";
     compile_kernel(kernel_name, ultra_kernel);
@@ -236,11 +290,15 @@ int main()
     if (VERBOSITY_LEVEL > 1)
     {
         cout << "Ultra dataset" << endl;
-        for (int i = 0; i < BUF_SIZE; i++)
+        //for (int i = 0; i < BUF_SIZE; i++)
+        for (int i = 0; i < 10; i++)
         {
             cout << ultraDataset[i].mantissa;
+            cout << "x";
             cout << ultraDataset[i].base;
+            cout << "^";
             cout << ultraDataset[i].exponent;
+            cout << " ";
         }
         cout << endl;
     }
@@ -252,8 +310,8 @@ int main()
     TenFloat* tenDataset = new TenFloat[BUF_SIZE];
     for (int i = 0; i < BUF_SIZE; i++)
     {
-        tenDataset[i].mantissa = 5;
-        tenDataset[i].exponent = 0;
+        tenDataset[i].mantissa = 40;
+        tenDataset[i].exponent = 1;
     }
     kernel_name = "tenTest";
     compile_kernel(kernel_name, ten_kernel);
@@ -278,11 +336,13 @@ int main()
     if (VERBOSITY_LEVEL > 1)
     {
         cout << "Ten dataset" << endl;
-        for (int i = 0; i < BUF_SIZE; i++)
+        //for (int i = 0; i < BUF_SIZE; i++)
+        for (int i = 0; i < 10; i++)
         {
             cout << tenDataset[i].mantissa;
-            cout << 10;
+            cout << "x10^";
             cout << tenDataset[i].exponent;
+            cout << " ";
         }
         cout << endl;
     }
@@ -291,6 +351,39 @@ int main()
     return 0;
 }
 
+int create_buffer_zero(cl_mem &d_buf, void* data, size_t size)
+{
+    d_buf = clCreateBuffer( ctx,
+                    CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
+                    size,
+                    data,
+                    &err_num);
+    if (err_num != CL_SUCCESS)
+    {
+        cout << "make buffer fail" << endl;
+        exit(err_num);
+    }
+/*
+    host_buf = (float* )clEnqueueMapBuffer(   queue,
+                                    d_buf,
+                                    CL_TRUE,
+                                    CL_MAP_READ | CL_MAP_WRITE,
+                                    0,
+                                    size,
+                                    //data,
+                                    0,
+                                    NULL,
+                                    NULL,
+                                    NULL
+            );
+    if (err_num != CL_SUCCESS)
+    {
+        cout << "make buffer fail" << endl;
+        exit(err_num);
+    }
+*/
+    return 0;
+}
 int create_buffer(cl_mem &d_buf, void* data, size_t size)
 {
     d_buf = clCreateBuffer( ctx,
