@@ -122,25 +122,32 @@ int main()
     runtime += (t2.tv_sec -t1.tv_sec) * 1000.0;
     runtime += (t2.tv_usec - t1.tv_usec) / 1000.0;
 
-    // ******* BURN RUN SO THE FIRST ONE DOESN'T SUCK *******
+    // ******* END BURN RUN SO THE FIRST ONE DOESN'T SUCK *******
 
 #ifdef FLOAT_CPU
     runtime = 0;
-    float* floatCPUDataset = new float[BUF_SIZE];
-    for (int i = 0; i < BUF_SIZE; i++)
-    {
-        floatCPUDataset[i] = 10.0;
-        exponents[i] = 1;
-    }
 
     gettimeofday(&t1, NULL);
-    for (int iter = 0; iter < 10000; iter++) {
+
+    float* floatCPUDataset = new float[BUF_SIZE];
+    for (int iter = 0; iter < 1000; iter++) {
+        for (int i = 0; i < BUF_SIZE; i++)
+        {
+            floatCPUDataset[i] = 10.0;
+            exponents[i] = 1;
+        }
+
         for (int i = 0; i < BUF_SIZE; i++)
         {
             floatCPUDataset[i] += 1;
             exponents[i] += 1;
         }
     }
+
+    gettimeofday(&t2, NULL);
+    runtime += (t2.tv_sec -t1.tv_sec) * 1000.0;
+    runtime += (t2.tv_usec - t1.tv_usec) / 1000.0;
+    cout << "Float_CPU runtime: " << runtime/1000 << endl;
 
     if (VERBOSITY_LEVEL > 1)
     {
@@ -155,41 +162,46 @@ int main()
         }
         cout << endl;
     }
-    gettimeofday(&t2, NULL);
-    runtime += (t2.tv_sec -t1.tv_sec) * 1000.0;
-    runtime += (t2.tv_usec - t1.tv_usec) / 1000.0;
-    cout << "Float_CPU runtime: " << runtime/10000 << endl;
 #endif
 
 #ifdef FLOAT
     runtime = 0;
+
+    gettimeofday(&t1, NULL);
     float* floatDataset = new float[BUF_SIZE];
-    for (int i = 0; i < BUF_SIZE; i++)
-    {
-        floatDataset[i] = 10.0;
-        exponents[i] = 1;
-    }
+
     kernel_name = "floatTest";
     compile_kernel(kernel_name, float_kernel);
     size = sizeof(float) * BUF_SIZE;
 
-    gettimeofday(&t1, NULL);
+    for (int iter = 0; iter < 1000; iter++)
+    {
+        for (int i = 0; i < BUF_SIZE; i++)
+        {
+            floatDataset[i] = 10.0;
+            exponents[i] = 1;
+        }
 
-    create_buffer(d_buf1, floatDataset, size);
-    create_buffer(d_buf2, exponents, sizeof(int) * BUF_SIZE);
-    err_num  = clSetKernelArg(float_kernel, 0, sizeof(cl_mem), (void *) &d_buf1);
-    err_num  |= clSetKernelArg(float_kernel, 1, sizeof(cl_mem), (void *) &d_buf2);
-    if (err_num != CL_SUCCESS)
-    {
-        cout << "kernel arg set fail" << endl;
-        exit(err_num);
-    }
-    for (int iter = 0; iter < 10000; iter++)
-    {
+        create_buffer(d_buf1, floatDataset, size);
+        create_buffer(d_buf2, exponents, sizeof(int) * BUF_SIZE);
+
+        err_num  = clSetKernelArg(float_kernel, 0, sizeof(cl_mem), (void *) &d_buf1);
+        err_num  |= clSetKernelArg(float_kernel, 1, sizeof(cl_mem), (void *) &d_buf2);
+        if (err_num != CL_SUCCESS)
+        {
+            cout << "kernel arg set fail" << endl;
+            exit(err_num);
+        }
+
         launch_kernel(float_kernel);
+
+        read_buffer(d_buf1, floatDataset, size);
+        read_buffer(d_buf2, exponents, sizeof(int) * BUF_SIZE);
     }
-    read_buffer(d_buf1, floatDataset, size);
-    read_buffer(d_buf2, exponents, sizeof(int) * BUF_SIZE);
+    gettimeofday(&t2, NULL);
+    runtime += (t2.tv_sec -t1.tv_sec) * 1000.0;
+    runtime += (t2.tv_usec - t1.tv_usec) / 1000.0;
+    cout << "Float runtime: " << runtime/1000 << endl;
 
     if (VERBOSITY_LEVEL > 1)
     {
@@ -204,18 +216,20 @@ int main()
         }
         cout << endl;
     }
-    gettimeofday(&t2, NULL);
-    runtime += (t2.tv_sec -t1.tv_sec) * 1000.0;
-    runtime += (t2.tv_usec - t1.tv_usec) / 1000.0;
-    cout << "Float runtime: " << runtime/10000 << endl;
 #endif
 
 #ifdef FLOAT_ZERO
     runtime = 0;
-    //float* floatZeroDataset = new float[BUF_SIZE];
+
+    gettimeofday(&t1, NULL);
+
     float* floatZeroDataset;
     int* floatZeroExponents;
     size = sizeof(float) * BUF_SIZE;
+
+    kernel_name = "floatTest";
+    compile_kernel(kernel_name, float_kernel);
+
     d_buf1 = clCreateBuffer(ctx,
                             CL_MEM_READ_ONLY  | CL_MEM_ALLOC_HOST_PTR,
                             size,
@@ -226,78 +240,69 @@ int main()
                             sizeof(cl_int)*BUF_SIZE,
                             0,
                             &err_num);
-    void* mapPtrA = (float*)clEnqueueMapBuffer( queue,
+    void* mapPtrA;
+    void* mapPtrB;
+    for (int iter = 0; iter < 1000; iter++) {
+        mapPtrA = (float*)clEnqueueMapBuffer( queue,
+                                                    d_buf1,
+                                                    CL_TRUE,
+                                                    CL_MAP_WRITE,
+                                                    0,
+                                                    size,
+                                                    0,
+                                                    NULL,
+                                                    NULL,
+                                                    NULL);
+        mapPtrB = (float*)clEnqueueMapBuffer( queue,
+                                                    d_buf2,
+                                                    CL_TRUE,
+                                                    CL_MAP_WRITE,
+                                                    0,
+                                                    sizeof(cl_int)*BUF_SIZE,
+                                                    0,
+                                                    NULL,
+                                                    NULL,
+                                                    NULL);
+        for (int i = 0; i < BUF_SIZE; i++)
+        {
+            ((float*)mapPtrA)[i] = 10.0;
+            ((int*)mapPtrB)[i] = 1;
+        }
+
+        clEnqueueUnmapMemObject(queue, d_buf1, mapPtrA, 0, NULL, NULL);
+        clEnqueueUnmapMemObject(queue, d_buf2, mapPtrB, 0, NULL, NULL);
+
+        err_num  = clSetKernelArg(float_kernel, 0, sizeof(cl_mem), (void *) &d_buf1);
+        err_num  |= clSetKernelArg(float_kernel, 1, sizeof(cl_mem), (void *) &d_buf2);
+        if (err_num != CL_SUCCESS)
+        {
+            cout << "kernel arg set fail" << endl;
+            exit(err_num);
+        }
+
+        launch_kernel(float_kernel);
+
+        mapPtrA = (float*)clEnqueueMapBuffer(   queue,
                                                 d_buf1,
                                                 CL_TRUE,
-                                                CL_MAP_WRITE,
+                                                CL_MAP_READ,
                                                 0,
                                                 size,
                                                 0,
                                                 NULL,
                                                 NULL,
                                                 NULL);
-    void* mapPtrB = (float*)clEnqueueMapBuffer( queue,
+        mapPtrB = (float*)clEnqueueMapBuffer(   queue,
                                                 d_buf2,
                                                 CL_TRUE,
-                                                CL_MAP_WRITE,
+                                                CL_MAP_READ,
                                                 0,
                                                 sizeof(cl_int)*BUF_SIZE,
                                                 0,
                                                 NULL,
                                                 NULL,
                                                 NULL);
-    for (int i = 0; i < BUF_SIZE; i++)
-    {
-        ((float*)mapPtrA)[i] = 10.0;
-        ((int*)mapPtrB)[i] = 1;
     }
-    //memcpy(mapPtrA, floatZeroDataset, size);
-    //memcpy(mapPtrB, floatZeroExponents, sizeof(cl_int)*BUF_SIZE);
-    clEnqueueUnmapMemObject(queue, d_buf1, mapPtrA, 0, NULL, NULL);
-    clEnqueueUnmapMemObject(queue, d_buf2, mapPtrB, 0, NULL, NULL);
-
-    kernel_name = "floatTest";
-    compile_kernel(kernel_name, float_kernel);
-
-    gettimeofday(&t1, NULL);
-
-    err_num  = clSetKernelArg(float_kernel, 0, sizeof(cl_mem), (void *) &d_buf1);
-    err_num  |= clSetKernelArg(float_kernel, 1, sizeof(cl_mem), (void *) &d_buf2);
-    if (err_num != CL_SUCCESS)
-    {
-        cout << "kernel arg set fail" << endl;
-        exit(err_num);
-    }
-    for (int iter = 0; iter < 10000; iter++) {
-        launch_kernel(float_kernel);
-    }
-
-    gettimeofday(&t2, NULL);
-    runtime += (t2.tv_sec -t1.tv_sec) * 1000.0;
-    runtime += (t2.tv_usec - t1.tv_usec) / 1000.0;
-    cout << "Float_Zero runtime: " << runtime/10000 << endl;
-
-    mapPtrA = (float*)clEnqueueMapBuffer(   queue,
-                                            d_buf1,
-                                            CL_TRUE,
-                                            CL_MAP_READ,
-                                            0,
-                                            size,
-                                            0,
-                                            NULL,
-                                            NULL,
-                                            NULL);
-    mapPtrB = (float*)clEnqueueMapBuffer(   queue,
-                                            d_buf2,
-                                            CL_TRUE,
-                                            CL_MAP_READ,
-                                            0,
-                                            sizeof(cl_int)*BUF_SIZE,
-                                            0,
-                                            NULL,
-                                            NULL,
-                                            NULL);
-
     if (VERBOSITY_LEVEL > 1)
     {
         cout << "Float_Zero results:" << endl;
@@ -314,6 +319,11 @@ int main()
 
     clEnqueueUnmapMemObject(queue, d_buf1, mapPtrA, 0, NULL, NULL);
     clEnqueueUnmapMemObject(queue, d_buf2, mapPtrB, 0, NULL, NULL);
+
+    gettimeofday(&t2, NULL);
+    runtime += (t2.tv_sec -t1.tv_sec) * 1000.0;
+    runtime += (t2.tv_usec - t1.tv_usec) / 1000.0;
+    cout << "Float_Zero runtime: " << runtime/1000 << endl;
 
 
     //create_buffer_zero(d_buf1, floatZeroDataset, size);
@@ -367,33 +377,41 @@ int main()
 
 #ifdef DOUBLE
     runtime = 0;
-    double* doubleDataset = new double[BUF_SIZE];
-    for (int i = 0; i < BUF_SIZE; i++)
-    {
-        doubleDataset[i] = 20;
-        exponents[i] = 1;
-    }
-    kernel_name = "doubleTest";
-    compile_kernel(kernel_name, double_kernel);
-    size = sizeof(double) * BUF_SIZE;
 
     gettimeofday(&t1, NULL);
-    create_buffer(d_buf1, doubleDataset, size);
-    create_buffer(d_buf2, exponents, sizeof(int) * BUF_SIZE);
-    err_num  = clSetKernelArg(double_kernel, 0, sizeof(cl_mem), (void *) &d_buf1);
-    err_num  |= clSetKernelArg(double_kernel, 1, sizeof(cl_mem), (void *) &d_buf2);
-    if (err_num != CL_SUCCESS)
-    {
-        cout << "kernel arg set fail" << endl;
-        exit(err_num);
-    }
+    kernel_name = "doubleTest";
+    compile_kernel(kernel_name, double_kernel);
 
-    for (int iter = 0; iter < 10000; iter++) {
+    double* doubleDataset = new double[BUF_SIZE];
+
+    for (int iter = 0; iter < 1000; iter++) {
+        for (int i = 0; i < BUF_SIZE; i++)
+        {
+            doubleDataset[i] = 20;
+            exponents[i] = 1;
+        }
+        size = sizeof(double) * BUF_SIZE;
+
+        create_buffer(d_buf1, doubleDataset, size);
+        create_buffer(d_buf2, exponents, sizeof(int) * BUF_SIZE);
+        err_num  = clSetKernelArg(double_kernel, 0, sizeof(cl_mem), (void *) &d_buf1);
+        err_num  |= clSetKernelArg(double_kernel, 1, sizeof(cl_mem), (void *) &d_buf2);
+        if (err_num != CL_SUCCESS)
+        {
+            cout << "kernel arg set fail" << endl;
+            exit(err_num);
+        }
+
         launch_kernel(double_kernel);
+
+        read_buffer(d_buf1, doubleDataset, size);
+        read_buffer(d_buf2, exponents, sizeof(int) * BUF_SIZE);
     }
 
-    read_buffer(d_buf1, doubleDataset, size);
-    read_buffer(d_buf2, exponents, sizeof(int) * BUF_SIZE);
+    gettimeofday(&t2, NULL);
+    runtime += (t2.tv_sec -t1.tv_sec) * 1000.0;
+    runtime += (t2.tv_usec - t1.tv_usec) / 1000.0;
+    cout << "Double runtime: " << runtime/1000 << endl;
 
     if (VERBOSITY_LEVEL > 1)
     {
@@ -408,38 +426,41 @@ int main()
         }
         cout << endl;
     }
-    gettimeofday(&t2, NULL);
-    runtime += (t2.tv_sec -t1.tv_sec) * 1000.0;
-    runtime += (t2.tv_usec - t1.tv_usec) / 1000.0;
-    cout << "Double runtime: " << runtime/10000 << endl;
 #endif
 
 #ifdef ULTRA
     runtime = 0;
-    UltraFloat* ultraDataset = new UltraFloat[BUF_SIZE];
-    for (int i = 0; i < BUF_SIZE; i++)
-    {
-        ultraDataset[i].mantissa = 30;
-        ultraDataset[i].base = 10;
-        ultraDataset[i].exponent = 1;
-    }
-    kernel_name = "ultraTest";
-    compile_kernel(kernel_name, ultra_kernel);
-    size = sizeof(UltraFloat) * BUF_SIZE;
 
     gettimeofday(&t1, NULL);
 
-    create_buffer(d_buf1, ultraDataset, size);
-    err_num  = clSetKernelArg(ultra_kernel, 0, sizeof(cl_mem), (void *) &d_buf1);
-    if (err_num != CL_SUCCESS)
-    {
-        cout << "kernel arg set fail" << endl;
-        exit(err_num);
-    }
-    for (int iter = 0; iter < 10000; iter++) {
+    UltraFloat* ultraDataset = new UltraFloat[BUF_SIZE];
+    kernel_name = "ultraTest";
+    compile_kernel(kernel_name, ultra_kernel);
+
+    for (int iter = 0; iter < 1000; iter++) {
+        for (int i = 0; i < BUF_SIZE; i++)
+        {
+            ultraDataset[i].mantissa = 30;
+            ultraDataset[i].base = 10;
+            ultraDataset[i].exponent = 1;
+        }
+        size = sizeof(UltraFloat) * BUF_SIZE;
+
+        create_buffer(d_buf1, ultraDataset, size);
+        err_num  = clSetKernelArg(ultra_kernel, 0, sizeof(cl_mem), (void *) &d_buf1);
+        if (err_num != CL_SUCCESS)
+        {
+            cout << "kernel arg set fail" << endl;
+            exit(err_num);
+        }
         launch_kernel(ultra_kernel);
+        read_buffer(d_buf1, ultraDataset, size);
     }
-    read_buffer(d_buf1, ultraDataset, size);
+
+    gettimeofday(&t2, NULL);
+    runtime += (t2.tv_sec -t1.tv_sec) * 1000.0;
+    runtime += (t2.tv_usec - t1.tv_usec) / 1000.0;
+    cout << "Ultra runtime: " << runtime/1000 << endl;
 
     if (VERBOSITY_LEVEL > 1)
     {
@@ -456,38 +477,41 @@ int main()
         }
         cout << endl;
     }
-    gettimeofday(&t2, NULL);
-    runtime += (t2.tv_sec -t1.tv_sec) * 1000.0;
-    runtime += (t2.tv_usec - t1.tv_usec) / 1000.0;
-    cout << "Ultra runtime: " << runtime/10000 << endl;
 #endif
 
 #ifdef TEN
     runtime = 0;
-    TenFloat* tenDataset = new TenFloat[BUF_SIZE];
-    for (int i = 0; i < BUF_SIZE; i++)
-    {
-        tenDataset[i].mantissa = 40;
-        tenDataset[i].exponent = 1;
-    }
-    kernel_name = "tenTest";
-    compile_kernel(kernel_name, ten_kernel);
-    size = sizeof(TenFloat) * BUF_SIZE;
 
     gettimeofday(&t1, NULL);
 
-    create_buffer(d_buf1, tenDataset, size);
-    err_num  = clSetKernelArg(ten_kernel, 0, sizeof(cl_mem), (void *) &d_buf1);
-    if (err_num != CL_SUCCESS)
-    {
-        cout << "kernel arg set fail" << endl;
-        exit(err_num);
+    TenFloat* tenDataset = new TenFloat[BUF_SIZE];
+    kernel_name = "tenTest";
+    compile_kernel(kernel_name, ten_kernel);
+
+    for (int iter = 0; iter < 1000; iter++) {
+        for (int i = 0; i < BUF_SIZE; i++)
+        {
+            tenDataset[i].mantissa = 40;
+            tenDataset[i].exponent = 1;
+        }
+        size = sizeof(TenFloat) * BUF_SIZE;
+
+        create_buffer(d_buf1, tenDataset, size);
+        err_num  = clSetKernelArg(ten_kernel, 0, sizeof(cl_mem), (void *) &d_buf1);
+        if (err_num != CL_SUCCESS)
+        {
+            cout << "kernel arg set fail" << endl;
+            exit(err_num);
+        }
+
+        launch_kernel(ten_kernel);
+        read_buffer(d_buf1, tenDataset, size);
     }
 
-    for (int iter = 0; iter < 10000; iter++) {
-        launch_kernel(ten_kernel);
-    }
-    read_buffer(d_buf1, tenDataset, size);
+    gettimeofday(&t2, NULL);
+    runtime += (t2.tv_sec -t1.tv_sec) * 1000.0;
+    runtime += (t2.tv_usec - t1.tv_usec) / 1000.0;
+    cout << "Ten runtime: " << runtime/1000 << endl;
 
     if (VERBOSITY_LEVEL > 1)
     {
@@ -502,10 +526,6 @@ int main()
         }
         cout << endl;
     }
-    gettimeofday(&t2, NULL);
-    runtime += (t2.tv_sec -t1.tv_sec) * 1000.0;
-    runtime += (t2.tv_usec - t1.tv_usec) / 1000.0;
-    cout << "Ten runtime: " << runtime/10000 << endl;
 #endif
 
 #ifdef TEN_ZERO
@@ -595,8 +615,8 @@ int unmap_buffer_zero(cl_mem &d_buf, void* data)
 int create_buffer_zero(cl_mem &d_buf, size_t size)
 {
     d_buf = clCreateBuffer( ctx,
-                    //CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
-                    CL_MEM_READ_WRITE | CL_MEM_USE_PERSISTENT_MEM_AMD,
+                    CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
+                    //CL_MEM_READ_WRITE | CL_MEM_USE_PERSISTENT_MEM_AMD,
                     size,
                     NULL,
                     &err_num);
