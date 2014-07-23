@@ -1,6 +1,7 @@
 
 #define FLOAT
-#define FLOAT_ZERO
+#define FLOAT_ZERO_ONE
+#define FLOAT_ZERO_TWO
 #define FLOAT_CPU
 #define DOUBLE
 #define ULTRA
@@ -218,7 +219,7 @@ int main()
     }
 #endif
 
-#ifdef FLOAT_ZERO
+#ifdef FLOAT_ZERO_ONE
     runtime = 0;
 
     gettimeofday(&t1, NULL);
@@ -325,54 +326,114 @@ int main()
     runtime += (t2.tv_usec - t1.tv_usec) / 1000.0;
     cout << "Float_Zero runtime: " << runtime/1000 << endl;
 
+#endif
 
-    //create_buffer_zero(d_buf1, floatZeroDataset, size);
-    /*
-    create_buffer_zero(d_buf1, size);
-    create_buffer_zero(d_buf2, sizeof(int) * BUF_SIZE);
-    map_buffer_zero(d_buf1, floatZeroDataset, size);
-    map_buffer_zero(d_buf2, floatZeroExponents, sizeof(int)*BUF_SIZE);
-    for (int i = 0; i < BUF_SIZE; i++)
-    {
-        ((float*)floatZeroDataset)[i] = 10.0;
-        ((int*)floatZeroExponents)[i] = 1;
-    }
-    unmap_buffer_zero(d_buf1, (void*)floatZeroDataset);
-    unmap_buffer_zero(d_buf2, (void*)floatZeroExponents);
-    kernel_name = "floatTest";
-    compile_kernel(kernel_name, float_kernel);
+#ifdef FLOAT_ZERO_TWO
+    runtime = 0;
 
     gettimeofday(&t1, NULL);
 
-    err_num  = clSetKernelArg(float_kernel, 0, sizeof(cl_mem), (void *) &d_buf1);
-    err_num  |= clSetKernelArg(float_kernel, 1, sizeof(cl_mem), (void *) &d_buf2);
-    if (err_num != CL_SUCCESS)
-    {
-        cout << "kernel arg set fail" << endl;
-        exit(err_num);
-    }
-    for (int iter = 0; iter < 10000; iter++) {
-        launch_kernel(float_kernel);
-    }
+    float* floatZeroDataset2;
+    int* floatZeroExponents2;
+    size = sizeof(float) * BUF_SIZE;
 
+    kernel_name = "floatTest";
+    compile_kernel(kernel_name, float_kernel);
+
+    d_buf1 = clCreateBuffer(ctx,
+                            CL_MEM_USE_PERSISTENT_MEM_AMD,
+                            size,
+                            0,
+                            &err_num);
+    d_buf2 = clCreateBuffer(ctx,
+                            CL_MEM_USE_PERSISTENT_MEM_AMD,
+                            sizeof(cl_int)*BUF_SIZE,
+                            0,
+                            &err_num);
+    //void* mapPtrA;
+    //void* mapPtrB;
+    for (int iter = 0; iter < 1000; iter++) {
+        mapPtrA = (float*)clEnqueueMapBuffer( queue,
+                                                    d_buf1,
+                                                    CL_TRUE,
+                                                    CL_MAP_WRITE,
+                                                    0,
+                                                    size,
+                                                    0,
+                                                    NULL,
+                                                    NULL,
+                                                    NULL);
+        mapPtrB = (float*)clEnqueueMapBuffer( queue,
+                                                    d_buf2,
+                                                    CL_TRUE,
+                                                    CL_MAP_WRITE,
+                                                    0,
+                                                    sizeof(cl_int)*BUF_SIZE,
+                                                    0,
+                                                    NULL,
+                                                    NULL,
+                                                    NULL);
+        for (int i = 0; i < BUF_SIZE; i++)
+        {
+            ((float*)mapPtrA)[i] = 10.0;
+            ((int*)mapPtrB)[i] = 1;
+        }
+
+        clEnqueueUnmapMemObject(queue, d_buf1, mapPtrA, 0, NULL, NULL);
+        clEnqueueUnmapMemObject(queue, d_buf2, mapPtrB, 0, NULL, NULL);
+
+        err_num  = clSetKernelArg(float_kernel, 0, sizeof(cl_mem), (void *) &d_buf1);
+        err_num  |= clSetKernelArg(float_kernel, 1, sizeof(cl_mem), (void *) &d_buf2);
+        if (err_num != CL_SUCCESS)
+        {
+            cout << "kernel arg set fail" << endl;
+            exit(err_num);
+        }
+
+        launch_kernel(float_kernel);
+
+        mapPtrA = (float*)clEnqueueMapBuffer(   queue,
+                                                d_buf1,
+                                                CL_TRUE,
+                                                CL_MAP_READ,
+                                                0,
+                                                size,
+                                                0,
+                                                NULL,
+                                                NULL,
+                                                NULL);
+        mapPtrB = (float*)clEnqueueMapBuffer(   queue,
+                                                d_buf2,
+                                                CL_TRUE,
+                                                CL_MAP_READ,
+                                                0,
+                                                sizeof(cl_int)*BUF_SIZE,
+                                                0,
+                                                NULL,
+                                                NULL,
+                                                NULL);
+    }
     if (VERBOSITY_LEVEL > 1)
     {
-        cout << "Float_Zero results:" << endl;
+        cout << "Float_Zero_Two results:" << endl;
         //for (int i = 0; i < BUF_SIZE; i++)
         for (int i = 0; i < 10; i++)
         {
-            cout << floatZeroDataset[i];
+            cout << ((float*)mapPtrA)[i];
             cout << "x10^";
-            cout << exponents[i];
+            cout << ((int*)mapPtrB)[i];
             cout << " ";
         }
         cout << endl;
     }
+
+    clEnqueueUnmapMemObject(queue, d_buf1, mapPtrA, 0, NULL, NULL);
+    clEnqueueUnmapMemObject(queue, d_buf2, mapPtrB, 0, NULL, NULL);
+
     gettimeofday(&t2, NULL);
     runtime += (t2.tv_sec -t1.tv_sec) * 1000.0;
     runtime += (t2.tv_usec - t1.tv_usec) / 1000.0;
-    cout << "Float_Zero runtime: " << runtime/10000 << endl;
-    */
+    cout << "Float_Zero_Two runtime: " << runtime/1000 << endl;
 #endif
 
 #ifdef DOUBLE

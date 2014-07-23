@@ -15,7 +15,7 @@ platform_extras =
 ifdef AMDAPPSDKROOT
 platform_includes = $(AMDAPPSDKROOT)/include
 platform_links = $(AMDAPPSDKROOT)/lib
-platform_extras += -I$(platform_includes) -L$(platform_links) -O3
+platform_extras += -I$(platform_includes) -L$(platform_links)
 endif
 
 # omp and clang don't get along
