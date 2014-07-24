@@ -30,7 +30,7 @@ all: regular
 ###### Core Test ######
 
 copy.o: copy.cpp
-	$(CXX) -c -o copy.o copy.cpp $(platform_extras)
+	$(CXX) -c -o copy.o copy.cpp $(platform_extras) -O3
 
 regular: copy.o
 	$(CXX) -o copy $^ $(linker_flags)
