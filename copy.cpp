@@ -7,9 +7,12 @@
 #define TEN
 //#define TEN_ZERO
 //#define BUF_SIZE 4096
-#define BUF_SIZE 8192
+//#define BUF_SIZE 8192
 //#define BUF_SIZE 16384
+//#define BUF_SIZE 32768
+#define BUF_SIZE 65536
 #define VERBOSITY_LEVEL 2
+#define REPS 1000
 //#define BUF_SIZE 1024
 
 #include <iostream>
@@ -131,7 +134,7 @@ int main()
     gettimeofday(&t1, NULL);
 
     float* floatCPUDataset = new float[BUF_SIZE];
-    for (int iter = 0; iter < 1000; iter++) {
+    for (int iter = 0; iter < REPS; iter++) {
         for (int i = 0; i < BUF_SIZE; i++)
         {
             floatCPUDataset[i] = 10.0;
@@ -140,7 +143,12 @@ int main()
 
         for (int i = 0; i < BUF_SIZE; i++)
         {
-            floatCPUDataset[i] += 1;
+            float temp_v = floatCPUDataset[i];
+            for (int j = 0; j < 64; j++) {
+                temp_v += temp_v * 0.001;
+            }
+
+            floatCPUDataset[i] += temp_v;
             exponents[i] += 1;
         }
     }
@@ -148,7 +156,7 @@ int main()
     gettimeofday(&t2, NULL);
     runtime += (t2.tv_sec -t1.tv_sec) * 1000.0;
     runtime += (t2.tv_usec - t1.tv_usec) / 1000.0;
-    cout << "Float_CPU runtime: " << runtime/1000 << endl;
+    cout << "Float_CPU runtime: " << runtime/REPS << endl;
 
     if (VERBOSITY_LEVEL > 1)
     {
@@ -175,11 +183,11 @@ int main()
     compile_kernel(kernel_name, float_kernel);
     size = sizeof(float) * BUF_SIZE;
 
-    for (int iter = 0; iter < 1000; iter++)
+    for (int iter = 0; iter < REPS; iter++)
     {
         for (int i = 0; i < BUF_SIZE; i++)
         {
-            floatDataset[i] = 10.0;
+            floatDataset[i] = 11.0;
             exponents[i] = 1;
         }
 
@@ -202,7 +210,7 @@ int main()
     gettimeofday(&t2, NULL);
     runtime += (t2.tv_sec -t1.tv_sec) * 1000.0;
     runtime += (t2.tv_usec - t1.tv_usec) / 1000.0;
-    cout << "Float runtime: " << runtime/1000 << endl;
+    cout << "Float runtime: " << runtime/REPS << endl;
 
     if (VERBOSITY_LEVEL > 1)
     {
@@ -243,7 +251,7 @@ int main()
                             &err_num);
     void* mapPtrA;
     void* mapPtrB;
-    for (int iter = 0; iter < 1000; iter++) {
+    for (int iter = 0; iter < REPS; iter++) {
         mapPtrA = (float*)clEnqueueMapBuffer( queue,
                                                     d_buf1,
                                                     CL_TRUE,
@@ -266,7 +274,7 @@ int main()
                                                     NULL);
         for (int i = 0; i < BUF_SIZE; i++)
         {
-            ((float*)mapPtrA)[i] = 10.0;
+            ((float*)mapPtrA)[i] = 12.0;
             ((int*)mapPtrB)[i] = 1;
         }
 
@@ -324,7 +332,7 @@ int main()
     gettimeofday(&t2, NULL);
     runtime += (t2.tv_sec -t1.tv_sec) * 1000.0;
     runtime += (t2.tv_usec - t1.tv_usec) / 1000.0;
-    cout << "Float_Zero runtime: " << runtime/1000 << endl;
+    cout << "Float_Zero runtime: " << runtime/REPS << endl;
 
 #endif
 
@@ -352,7 +360,7 @@ int main()
                             &err_num);
     //void* mapPtrA;
     //void* mapPtrB;
-    for (int iter = 0; iter < 1000; iter++) {
+    for (int iter = 0; iter < REPS; iter++) {
         mapPtrA = (float*)clEnqueueMapBuffer( queue,
                                                     d_buf1,
                                                     CL_TRUE,
@@ -375,7 +383,7 @@ int main()
                                                     NULL);
         for (int i = 0; i < BUF_SIZE; i++)
         {
-            ((float*)mapPtrA)[i] = 10.0;
+            ((float*)mapPtrA)[i] = 13.0;
             ((int*)mapPtrB)[i] = 1;
         }
 
@@ -448,7 +456,7 @@ int main()
     for (int iter = 0; iter < 1000; iter++) {
         for (int i = 0; i < BUF_SIZE; i++)
         {
-            doubleDataset[i] = 20;
+            doubleDataset[i] = 14.0;
             exponents[i] = 1;
         }
         size = sizeof(double) * BUF_SIZE;
@@ -501,7 +509,7 @@ int main()
     for (int iter = 0; iter < 1000; iter++) {
         for (int i = 0; i < BUF_SIZE; i++)
         {
-            ultraDataset[i].mantissa = 30;
+            ultraDataset[i].mantissa = 15.0;
             ultraDataset[i].base = 10;
             ultraDataset[i].exponent = 1;
         }
@@ -521,7 +529,7 @@ int main()
     gettimeofday(&t2, NULL);
     runtime += (t2.tv_sec -t1.tv_sec) * 1000.0;
     runtime += (t2.tv_usec - t1.tv_usec) / 1000.0;
-    cout << "Ultra runtime: " << runtime/1000 << endl;
+    cout << "Ultra runtime: " << runtime/REPS << endl;
 
     if (VERBOSITY_LEVEL > 1)
     {
@@ -549,10 +557,10 @@ int main()
     kernel_name = "tenTest";
     compile_kernel(kernel_name, ten_kernel);
 
-    for (int iter = 0; iter < 1000; iter++) {
+    for (int iter = 0; iter < REPS; iter++) {
         for (int i = 0; i < BUF_SIZE; i++)
         {
-            tenDataset[i].mantissa = 40;
+            tenDataset[i].mantissa = 16.0;
             tenDataset[i].exponent = 1;
         }
         size = sizeof(TenFloat) * BUF_SIZE;
@@ -572,7 +580,7 @@ int main()
     gettimeofday(&t2, NULL);
     runtime += (t2.tv_sec -t1.tv_sec) * 1000.0;
     runtime += (t2.tv_usec - t1.tv_usec) / 1000.0;
-    cout << "Ten runtime: " << runtime/1000 << endl;
+    cout << "Ten runtime: " << runtime/REPS << endl;
 
     if (VERBOSITY_LEVEL > 1)
     {
@@ -611,7 +619,7 @@ int main()
         exit(err_num);
     }
 
-    for (int iter = 0; iter < 10000; iter++) {
+    for (int iter = 0; iter < REPS; iter++) {
         launch_kernel(ten_kernel);
     }
     read_buffer(d_buf1, tenZeroDataset, size);
@@ -632,7 +640,7 @@ int main()
     gettimeofday(&t2, NULL);
     runtime += (t2.tv_sec -t1.tv_sec) * 1000.0;
     runtime += (t2.tv_usec - t1.tv_usec) / 1000.0;
-    cout << "Ten Zero runtime: " << runtime/10000 << endl;
+    cout << "Ten Zero runtime: " << runtime/REPS << endl;
 #endif
     return 0;
 }
