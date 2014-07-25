@@ -268,26 +268,8 @@ int main()
 
         launch_kernel(float_kernel);
 
-        mapPtrA = (float*)clEnqueueMapBuffer(   queue,
-                                                d_buf1,
-                                                CL_TRUE,
-                                                CL_MAP_READ,
-                                                0,
-                                                size,
-                                                0,
-                                                NULL,
-                                                NULL,
-                                                NULL);
-        mapPtrB = (float*)clEnqueueMapBuffer(   queue,
-                                                d_buf2,
-                                                CL_TRUE,
-                                                CL_MAP_READ,
-                                                0,
-                                                sizeof(cl_int)*BUF_SIZE,
-                                                0,
-                                                NULL,
-                                                NULL,
-                                                NULL);
+        mapPtrA = (float*)map_buffer_zero(d_buf1, size);
+        mapPtrB = (float*)map_buffer_zero(d_buf2, size);
     }
     if (VERBOSITY_LEVEL > 1)
     {
@@ -325,6 +307,9 @@ int main()
     kernel_name = "floatTest";
     compile_kernel(kernel_name, float_kernel);
 
+    create_buffer_zero(d_buf1, size);
+    create_buffer_zero(d_buf2, sizeof(cl_int)*BUF_SIZE);
+    /*
     d_buf1 = clCreateBuffer(ctx,
                             CL_MEM_USE_PERSISTENT_MEM_AMD,
                             size,
@@ -335,9 +320,11 @@ int main()
                             sizeof(cl_int)*BUF_SIZE,
                             0,
                             &err_num);
-    //void* mapPtrA;
-    //void* mapPtrB;
+                            */
     for (int iter = 0; iter < REPS; iter++) {
+        mapPtrA = (float*)map_buffer_zero(d_buf1, size);
+        mapPtrB = (float*)map_buffer_zero(d_buf2, size);
+        /*
         mapPtrA = (float*)clEnqueueMapBuffer( queue,
                                                     d_buf1,
                                                     CL_TRUE,
@@ -358,6 +345,7 @@ int main()
                                                     NULL,
                                                     NULL,
                                                     NULL);
+                                                    */
         for (int i = 0; i < BUF_SIZE; i++)
         {
             ((float*)mapPtrA)[i] = 13.0;
@@ -377,6 +365,10 @@ int main()
 
         launch_kernel(float_kernel);
 
+        mapPtrA = (float*)map_buffer_zero(d_buf1, size);
+        mapPtrB = (float*)map_buffer_zero(d_buf2, size);
+
+        /*
         mapPtrA = (float*)clEnqueueMapBuffer(   queue,
                                                 d_buf1,
                                                 CL_TRUE,
@@ -397,6 +389,7 @@ int main()
                                                 NULL,
                                                 NULL,
                                                 NULL);
+                                                */
     }
     if (VERBOSITY_LEVEL > 1)
     {
@@ -435,6 +428,10 @@ int main()
     kernel_name = "floatTest";
     compile_kernel(kernel_name, float_kernel);
 
+    create_buffer_zero(d_buf1, size);
+    create_buffer_zero(d_buf2, sizeof(cl_int)*BUF_SIZE);
+
+    /*
     d_buf1 = clCreateBuffer(ctx,
                             CL_MEM_READ_ONLY  | CL_MEM_ALLOC_HOST_PTR,
                             size,
@@ -445,14 +442,16 @@ int main()
                             sizeof(cl_int)*BUF_SIZE,
                             0,
                             &err_num);
-    //void* mapPtrA;
-    //void* mapPtrB;
+                            */
     for (int iter = 0; iter < REPS; iter++) {
         for (int i = 0; i < BUF_SIZE; i++)
         {
             floatDataset[i] = 11.0;
             exponents[i] = 1;
         }
+        mapPtrA = (float*)map_buffer_zero(d_buf1, size);
+        mapPtrB = (float*)map_buffer_zero(d_buf2, size);
+        /*
         mapPtrA = (float*)clEnqueueMapBuffer( queue,
                                                     d_buf1,
                                                     CL_TRUE,
@@ -473,6 +472,7 @@ int main()
                                                     NULL,
                                                     NULL,
                                                     NULL);
+                                                    */
         /*
         for (int i = 0; i < BUF_SIZE; i++)
         {
@@ -496,6 +496,9 @@ int main()
 
         launch_kernel(float_kernel);
 
+        mapPtrA = (float*)map_buffer_zero(d_buf1, size);
+        mapPtrB = (float*)map_buffer_zero(d_buf2, size);
+        /*
         mapPtrA = (float*)clEnqueueMapBuffer(   queue,
                                                 d_buf1,
                                                 CL_TRUE,
@@ -516,6 +519,7 @@ int main()
                                                 NULL,
                                                 NULL,
                                                 NULL);
+                                                */
     }
     if (VERBOSITY_LEVEL > 1)
     {
@@ -747,7 +751,7 @@ void* map_buffer_zero(cl_mem d_buf, size_t size)
     void* temp = clEnqueueMapBuffer(  queue,
                                 d_buf,
                                 CL_TRUE,
-                                CL_MAP_WRITE,
+                                CL_MAP_READ | CL_MAP_WRITE,
                                 0,
                                 size,
                                 0,
