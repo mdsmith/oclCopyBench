@@ -1,5 +1,6 @@
 UNAME := $(shell uname)
-CXX = clang++
+#CXX = clang++
+CXX = g++-4.9
 ifeq ($(UNAME), Linux)
 CXX = g++
 endif
@@ -30,10 +31,10 @@ all: regular
 ###### Core Test ######
 
 copy.o: copy.cpp
-	$(CXX) -c -o copy.o copy.cpp $(platform_extras) -O3
+	$(CXX) -c -o copy.o copy.cpp $(platform_extras) -O3 -fopenmp
 
 regular: copy.o
-	$(CXX) -o copy $^ $(linker_flags)
+	$(CXX) -o copy $^ $(linker_flags) -fopenmp
 
 #$(CXX) $(linker_flags) -o copy $^
 

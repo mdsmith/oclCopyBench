@@ -1,6 +1,7 @@
 
 #define FLOAT
 #define FLOAT_ZERO_ONE
+#define FLOAT_ZERO_THREE
 #define FLOAT_CPU
 #define DOUBLE
 #define ULTRA
@@ -10,7 +11,8 @@
 //#define BUF_SIZE 8192
 //#define BUF_SIZE 16384
 //#define BUF_SIZE 32768
-#define BUF_SIZE 65536
+//#define BUF_SIZE 65536
+#define BUF_SIZE 131072
 #define VERBOSITY_LEVEL 2
 #define REPS 1000
 //#define BUF_SIZE 1024
@@ -52,6 +54,8 @@ size_t global_work_size = BUF_SIZE;
 size_t local_work_size;
 cl_int err_num;
 cl_program prog;
+void* mapPtrA;
+void* mapPtrB;
 
 cl_mem d_buf1;
 cl_mem d_buf2;
@@ -75,7 +79,7 @@ int setup_context();
 int compile_kernel(const char* kernel_name, cl_kernel &kernel);
 int create_buffer(cl_mem &d_buf, void* buffer, size_t size);
 int create_buffer_zero(cl_mem &d_buf, size_t size);
-int map_buffer_zero(cl_mem &d_buf, void* buffer, size_t size);
+void* map_buffer_zero(cl_mem d_buf, size_t size);
 int unmap_buffer_zero(cl_mem &d_buf, void* buffer);
 int launch_kernel(cl_kernel kernel);
 int read_buffer(cl_mem &d_buf, void* data, size_t size);
@@ -141,6 +145,7 @@ int main()
             exponents[i] = 1;
         }
 
+#pragma omp parallel for
         for (int i = 0; i < BUF_SIZE; i++)
         {
             float temp_v = floatCPUDataset[i];
@@ -239,39 +244,11 @@ int main()
     kernel_name = "floatTest";
     compile_kernel(kernel_name, float_kernel);
 
-    d_buf1 = clCreateBuffer(ctx,
-                            CL_MEM_READ_ONLY  | CL_MEM_ALLOC_HOST_PTR,
-                            size,
-                            0,
-                            &err_num);
-    d_buf2 = clCreateBuffer(ctx,
-                            CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR,
-                            sizeof(cl_int)*BUF_SIZE,
-                            0,
-                            &err_num);
-    void* mapPtrA;
-    void* mapPtrB;
+    create_buffer_zero(d_buf1, size);
+    create_buffer_zero(d_buf2, sizeof(cl_int)*BUF_SIZE);
     for (int iter = 0; iter < REPS; iter++) {
-        mapPtrA = (float*)clEnqueueMapBuffer( queue,
-                                                    d_buf1,
-                                                    CL_TRUE,
-                                                    CL_MAP_WRITE,
-                                                    0,
-                                                    size,
-                                                    0,
-                                                    NULL,
-                                                    NULL,
-                                                    NULL);
-        mapPtrB = (float*)clEnqueueMapBuffer( queue,
-                                                    d_buf2,
-                                                    CL_TRUE,
-                                                    CL_MAP_WRITE,
-                                                    0,
-                                                    sizeof(cl_int)*BUF_SIZE,
-                                                    0,
-                                                    NULL,
-                                                    NULL,
-                                                    NULL);
+        mapPtrA = (float*)map_buffer_zero(d_buf1, size);
+        mapPtrB = (float*)map_buffer_zero(d_buf2, size);
         for (int i = 0; i < BUF_SIZE; i++)
         {
             ((float*)mapPtrA)[i] = 12.0;
@@ -443,6 +420,126 @@ int main()
     runtime += (t2.tv_usec - t1.tv_usec) / 1000.0;
     cout << "Float_Zero_Two runtime: " << runtime/1000 << endl;
 #endif
+
+#ifdef FLOAT_ZERO_THREE
+    runtime = 0;
+
+    gettimeofday(&t1, NULL);
+
+    floatDataset = new float[BUF_SIZE];;
+
+    float* floatZeroDataset3;
+    int* floatZeroExponents3;
+    size = sizeof(float) * BUF_SIZE;
+
+    kernel_name = "floatTest";
+    compile_kernel(kernel_name, float_kernel);
+
+    d_buf1 = clCreateBuffer(ctx,
+                            CL_MEM_READ_ONLY  | CL_MEM_ALLOC_HOST_PTR,
+                            size,
+                            0,
+                            &err_num);
+    d_buf2 = clCreateBuffer(ctx,
+                            CL_MEM_READ_ONLY  | CL_MEM_ALLOC_HOST_PTR,
+                            sizeof(cl_int)*BUF_SIZE,
+                            0,
+                            &err_num);
+    //void* mapPtrA;
+    //void* mapPtrB;
+    for (int iter = 0; iter < REPS; iter++) {
+        for (int i = 0; i < BUF_SIZE; i++)
+        {
+            floatDataset[i] = 11.0;
+            exponents[i] = 1;
+        }
+        mapPtrA = (float*)clEnqueueMapBuffer( queue,
+                                                    d_buf1,
+                                                    CL_TRUE,
+                                                    CL_MAP_WRITE,
+                                                    0,
+                                                    size,
+                                                    0,
+                                                    NULL,
+                                                    NULL,
+                                                    NULL);
+        mapPtrB = (float*)clEnqueueMapBuffer( queue,
+                                                    d_buf2,
+                                                    CL_TRUE,
+                                                    CL_MAP_WRITE,
+                                                    0,
+                                                    sizeof(cl_int)*BUF_SIZE,
+                                                    0,
+                                                    NULL,
+                                                    NULL,
+                                                    NULL);
+        /*
+        for (int i = 0; i < BUF_SIZE; i++)
+        {
+            ((float*)mapPtrA)[i] = 13.0;
+            ((int*)mapPtrB)[i] = 1;
+        }
+        */
+        memcpy(mapPtrA, floatDataset, size);
+        memcpy(mapPtrB, exponents, sizeof(cl_int)*BUF_SIZE);
+
+        clEnqueueUnmapMemObject(queue, d_buf1, mapPtrA, 0, NULL, NULL);
+        clEnqueueUnmapMemObject(queue, d_buf2, mapPtrB, 0, NULL, NULL);
+
+        err_num  = clSetKernelArg(float_kernel, 0, sizeof(cl_mem), (void *) &d_buf1);
+        err_num  |= clSetKernelArg(float_kernel, 1, sizeof(cl_mem), (void *) &d_buf2);
+        if (err_num != CL_SUCCESS)
+        {
+            cout << "kernel arg set fail" << endl;
+            exit(err_num);
+        }
+
+        launch_kernel(float_kernel);
+
+        mapPtrA = (float*)clEnqueueMapBuffer(   queue,
+                                                d_buf1,
+                                                CL_TRUE,
+                                                CL_MAP_READ,
+                                                0,
+                                                size,
+                                                0,
+                                                NULL,
+                                                NULL,
+                                                NULL);
+        mapPtrB = (float*)clEnqueueMapBuffer(   queue,
+                                                d_buf2,
+                                                CL_TRUE,
+                                                CL_MAP_READ,
+                                                0,
+                                                sizeof(cl_int)*BUF_SIZE,
+                                                0,
+                                                NULL,
+                                                NULL,
+                                                NULL);
+    }
+    if (VERBOSITY_LEVEL > 1)
+    {
+        cout << "Float_Zero_Three results:" << endl;
+        //for (int i = 0; i < BUF_SIZE; i++)
+        for (int i = 0; i < 10; i++)
+        {
+            cout << ((float*)mapPtrA)[i];
+            cout << "x10^";
+            cout << ((int*)mapPtrB)[i];
+            cout << " ";
+        }
+        cout << endl;
+    }
+
+    clEnqueueUnmapMemObject(queue, d_buf1, mapPtrA, 0, NULL, NULL);
+    clEnqueueUnmapMemObject(queue, d_buf2, mapPtrB, 0, NULL, NULL);
+
+    gettimeofday(&t2, NULL);
+    runtime += (t2.tv_sec -t1.tv_sec) * 1000.0;
+    runtime += (t2.tv_usec - t1.tv_usec) / 1000.0;
+    cout << "Float_Zero_Three runtime: " << runtime/1000 << endl;
+#endif
+
 
 #ifdef DOUBLE
     runtime = 0;
@@ -645,9 +742,9 @@ int main()
     return 0;
 }
 
-int map_buffer_zero(cl_mem &d_buf, void* data, size_t size)
+void* map_buffer_zero(cl_mem d_buf, size_t size)
 {
-     data = clEnqueueMapBuffer( queue,
+    void* temp = clEnqueueMapBuffer(  queue,
                                 d_buf,
                                 CL_TRUE,
                                 CL_MAP_WRITE,
@@ -662,7 +759,7 @@ int map_buffer_zero(cl_mem &d_buf, void* data, size_t size)
         cout << "map buffer fail" << endl;
         exit(err_num);
     }
-    return 0;
+    return temp;
 }
 
 int unmap_buffer_zero(cl_mem &d_buf, void* data)
@@ -684,11 +781,10 @@ int unmap_buffer_zero(cl_mem &d_buf, void* data)
 int create_buffer_zero(cl_mem &d_buf, size_t size)
 {
     d_buf = clCreateBuffer( ctx,
-                    CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
-                    //CL_MEM_READ_WRITE | CL_MEM_USE_PERSISTENT_MEM_AMD,
-                    size,
-                    NULL,
-                    &err_num);
+                            CL_MEM_READ_ONLY  | CL_MEM_ALLOC_HOST_PTR,
+                            size,
+                            NULL,
+                            &err_num);
     if (err_num != CL_SUCCESS)
     {
         cout << "make buffer fail" << endl;
