@@ -6,35 +6,14 @@ __kernel void floatMatTest(__global float* buf1,
                         __global int* buf2b
                         )
 {
-    int index = get_global_id(0);
+    //int index = get_global_id(0);
     // we're using half of buf1 for source, half for sink, global work size is equal to half buf1 size
     int store_index = get_global_id(0) + get_global_size(0);
-    /*
-    float temp1 = buf1[index];
-    int temp2 = buf2[index];
-    float temp1b = buf1b[index];
-    int temp2b = buf2b[index];
-    */
     float sum = 0.0;
     for (int j = 0; j < 64; j++) {
         sum += buf1[(get_global_id(0)/64)*64 + j] * buf1b[(get_global_id(0)%64)*64 + j];
     }
-    /*
-    for (int j = 0; j < 64; j++) {
-        temp1 *= 0.8;
-    }
-    */
-    /*
-    if (temp1 < 0.001) {
-      temp1 *= 1000.0;
-      temp2 += 3;
-    }
-    */
     buf1[store_index] = sum;
-    //buf1[index] = index;
-    //buf1[store_index] = store_index;
-    //buf1[index] = temp1 + 1.0;
-    //buf2[index] = temp2;
 };
 
 __kernel void floatMatLocalTest(__global float* buf1,
@@ -48,37 +27,16 @@ __kernel void floatMatLocalTest(__global float* buf1,
     int store_index = get_global_id(0) + get_global_size(0);
     __local float aScratch[256];
     __local float bScratch[64*64];
-    /*
-    float temp1 = buf1[index];
-    int temp2 = buf2[index];
-    float temp1b = buf1b[index];
-    int temp2b = buf2b[index];
-    */
     aScratch[get_local_id(0)] = buf1[get_global_id(0)];
     for (int i = 0; i < 4; i++) {
       bScratch[get_local_id(0) + i*256] = buf1b[get_local_id(0) + i*256];
     }
+    barrier(CLK_LOCAL_MEM_FENCE);
     float sum = 0.0;
     for (int j = 0; j < 64; j++) {
-        //sum += buf1[(get_global_id(0)/64)*64 + j] * buf1b[(get_global_id(0)%64)*64 + j];
         sum += aScratch[(get_local_id(0)/64)*64 + j] * bScratch[(get_local_id(0)%64)*64 + j];
     }
-    /*
-    for (int j = 0; j < 64; j++) {
-        temp1 *= 0.8;
-    }
-    */
-    /*
-    if (temp1 < 0.001) {
-      temp1 *= 1000.0;
-      temp2 += 3;
-    }
-    */
     buf1[store_index] = sum;
-    //buf1[index] = index;
-    //buf1[store_index] = store_index;
-    //buf1[index] = temp1 + 1.0;
-    //buf2[index] = temp2;
 };
 
 __kernel void floatMatTiledTest(__global float* buf1,

@@ -7,7 +7,7 @@
 #define FLOAT_ZERO_THREE_LOCAL_MAT
 #define FLOAT_ZERO_THREE_MAT_TILED
 //#define FLOAT_ZERO_THREE_LONG_MAT
-#define FLOAT_CPU
+//#define FLOAT_CPU
 #define FLOAT_MAT_CPU
 //#define DOUBLE
 //#define ULTRA
@@ -37,7 +37,7 @@
     //#include <CL/opencl.h>
     #include <CL/cl.h>
     #include <CL/cl_ext.h>
-    #define FLOAT_ZERO_TWO
+    //#define FLOAT_ZERO_TWO
 #endif
 using namespace std;
 
