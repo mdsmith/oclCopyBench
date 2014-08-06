@@ -3,38 +3,37 @@ STRINGIFY(
 __kernel void floatMatTest(__global float* buf1,
                         __global int* buf2,
                         __global float* buf1b,
-                        __global int* buf2b
+                        __global int* buf2b,
+                        int nCols
                         )
 {
     int index = get_global_id(0);
-    // we're using half of buf1 for source, half for sink, global work size is equal to half buf1 size
-    int store_index = get_global_id(0) + get_global_size(0);
-    /*
-    float temp1 = buf1[index];
-    int temp2 = buf2[index];
-    float temp1b = buf1b[index];
-    int temp2b = buf2b[index];
-    */
+    int a_offset = (index/64)*64;
+    int b_offset = (index%64)*64;
     float sum = 0.0;
-    for (int j = 0; j < 64; j++) {
-        sum += buf1[(get_global_id(0)/64)*64 + j] * buf1b[(get_global_id(0)%64)*64 + j];
+    //for (int j = 0; j < nCols; j++) {
+        //sum += buf1[a_offset + j] * buf1b[b_offset + j];
+    //}
+    for (int j = 0; j < nCols;) {
+        sum += buf1[a_offset + j] * buf1b[b_offset + j];
+        j++;
+        sum += buf1[a_offset + j] * buf1b[b_offset + j];
+        j++;
+        sum += buf1[a_offset + j] * buf1b[b_offset + j];
+        j++;
+        sum += buf1[a_offset + j] * buf1b[b_offset + j];
+        j++;
+        sum += buf1[a_offset + j] * buf1b[b_offset + j];
+        j++;
+        sum += buf1[a_offset + j] * buf1b[b_offset + j];
+        j++;
+        sum += buf1[a_offset + j] * buf1b[b_offset + j];
+        j++;
+        sum += buf1[a_offset + j] * buf1b[b_offset + j];
+        j++;
     }
-    /*
-    for (int j = 0; j < 64; j++) {
-        temp1 *= 0.8;
-    }
-    */
-    /*
-    if (temp1 < 0.001) {
-      temp1 *= 1000.0;
-      temp2 += 3;
-    }
-    */
+    int store_index = index + get_global_size(0);
     buf1[store_index] = sum;
-    //buf1[index] = index;
-    //buf1[store_index] = store_index;
-    //buf1[index] = temp1 + 1.0;
-    //buf2[index] = temp2;
 };
 
 __kernel void floatMatLocalTest(__global float* buf1,
