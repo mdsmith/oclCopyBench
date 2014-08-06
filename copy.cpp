@@ -3,7 +3,8 @@
 //#define FLOAT_ZERO_ONE
 //#define FLOAT_ZERO_NOE
 //#define FLOAT_ZERO_THREE
-//#define FLOAT_ZERO_THREE_MAT
+#define FLOAT_ZERO_THREE_MAT
+#define FLOAT_ZERO_THREE_LOCAL_MAT
 #define FLOAT_ZERO_THREE_MAT_TILED
 //#define FLOAT_ZERO_THREE_LONG_MAT
 #define FLOAT_CPU
@@ -57,6 +58,7 @@ cl_context ctx;
 cl_kernel float_kernel;
 cl_kernel float_no_e_kernel;
 cl_kernel float_mat_kernel;
+cl_kernel float_mat_local_kernel;
 cl_kernel float_mat_tiled_kernel;
 cl_kernel e_rebalance;;
 cl_kernel double_kernel;
@@ -652,6 +654,88 @@ int main()
     runtime += (t2.tv_sec -t1.tv_sec) * 1000.0;
     runtime += (t2.tv_usec - t1.tv_usec) / 1000.0;
     cout << "Float_Zero_Three runtime: " << runtime/1000 << endl;
+#endif
+
+#ifdef FLOAT_ZERO_THREE_LOCAL_MAT
+    runtime = 0;
+
+    gettimeofday(&t1, NULL);
+
+
+    kernel_name = "floatMatLocalTest";
+    compile_kernel(kernel_name, float_mat_local_kernel);
+
+    create_buffer_zero(d_buf1, size1);
+    create_buffer_zero(d_buf2, size_e1);
+    create_buffer_zero(d_buf1b, size2);
+    create_buffer_zero(d_buf2b, size_e2);
+
+    for (int iter = 0; iter < REPS; iter++) {
+        for (int i = 0; i < MAT_SIZE1; i++)
+        {
+            floatZeroDataset4[i] = i;
+            floatZeroExponents4[i] = 0;
+        }
+        for (int i = 0; i < MAT_SIZE2; i++)
+        {
+            floatZeroDataset4b[i] = i;
+            floatZeroExponents4b[i] = 0;
+        }
+        mapPtrA = (float*)map_buffer_zero(d_buf1, size1);
+        mapPtrB = (float*)map_buffer_zero(d_buf2, size_e1);
+        mapPtrAb = (float*)map_buffer_zero(d_buf1b, size2);
+        mapPtrBb = (float*)map_buffer_zero(d_buf2b, size_e2);
+        memcpy(mapPtrA, floatZeroDataset4, size1);
+        memcpy(mapPtrB, floatZeroExponents4, size_e1);
+        memcpy(mapPtrAb, floatZeroDataset4b, size2);
+        memcpy(mapPtrBb, floatZeroExponents4b, size_e2);
+        clEnqueueUnmapMemObject(queue, d_buf1, mapPtrA, 0, NULL, NULL);
+        clEnqueueUnmapMemObject(queue, d_buf2, mapPtrB, 0, NULL, NULL);
+        clEnqueueUnmapMemObject(queue, d_buf1b, mapPtrAb, 0, NULL, NULL);
+        clEnqueueUnmapMemObject(queue, d_buf2b, mapPtrBb, 0, NULL, NULL);
+
+        err_num  = clSetKernelArg(float_mat_local_kernel, 0, sizeof(cl_mem), (void *) &d_buf1);
+        err_num  |= clSetKernelArg(float_mat_local_kernel, 1, sizeof(cl_mem), (void *) &d_buf2);
+        err_num  = clSetKernelArg(float_mat_local_kernel, 2, sizeof(cl_mem), (void *) &d_buf1b);
+        err_num  |= clSetKernelArg(float_mat_local_kernel, 3, sizeof(cl_mem), (void *) &d_buf2b);
+        if (err_num != CL_SUCCESS)
+        {
+            cout << "kernel arg set fail" << endl;
+            exit(err_num);
+        }
+
+        launch_kernel(float_mat_local_kernel);
+
+        mapPtrA = (float*)map_buffer_zero(d_buf1, size1);
+        mapPtrB = (float*)map_buffer_zero(d_buf2, size_e1);
+        mapPtrAb = (float*)map_buffer_zero(d_buf1b, size2);
+        mapPtrBb = (float*)map_buffer_zero(d_buf2b, size_e2);
+    }
+    if (VERBOSITY_LEVEL > 1)
+    {
+        cout << "Float_Zero_Three_Local_Mat results:" << endl;
+        //for (int i = 0; i < BUF_SIZE; i++)
+        for (int i = 0; i < 20; i++)
+        //for (int i = 0; i < MAT_SIZE1; i++)
+        {
+            cout << ((float*)mapPtrA)[i + MAT_SIZE1/2 - 10];
+            //cout << ((float*)mapPtrA)[i];
+            //cout << "x10^";
+            //cout << ((int*)mapPtrB)[i + MAT_SIZE1/2];
+            cout << " ";
+        }
+        cout << endl;
+    }
+
+    clEnqueueUnmapMemObject(queue, d_buf1, mapPtrA, 0, NULL, NULL);
+    clEnqueueUnmapMemObject(queue, d_buf2, mapPtrB, 0, NULL, NULL);
+    clEnqueueUnmapMemObject(queue, d_buf1b, mapPtrAb, 0, NULL, NULL);
+    clEnqueueUnmapMemObject(queue, d_buf2b, mapPtrBb, 0, NULL, NULL);
+
+    gettimeofday(&t2, NULL);
+    runtime += (t2.tv_sec -t1.tv_sec) * 1000.0;
+    runtime += (t2.tv_usec - t1.tv_usec) / 1000.0;
+    cout << "Float_Zero_Three_Local_Mat runtime: " << runtime/1000 << endl;
 #endif
 
 #ifdef FLOAT_ZERO_THREE_MAT
@@ -1271,7 +1355,7 @@ int setup_context()
     devices = (cl_device_id *)malloc(dev_count * sizeof(cl_device_id));
     err_num = clGetDeviceIDs(plat, CL_DEVICE_TYPE_GPU, dev_count, devices, NULL);
 
-    device = devices[1]; // XXX set back down to 0
+    device = devices[0]; // XXX set back down to 0
     if (err_num != CL_SUCCESS)
     {
         cout << "Dev fail" << endl;
