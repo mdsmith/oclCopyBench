@@ -776,10 +776,13 @@ int main()
         clEnqueueUnmapMemObject(queue, d_buf1b, mapPtrAb, 0, NULL, NULL);
         clEnqueueUnmapMemObject(queue, d_buf2b, mapPtrBb, 0, NULL, NULL);
 
+        int kernelNCols = 64;
+
         err_num  = clSetKernelArg(float_mat_kernel, 0, sizeof(cl_mem), (void *) &d_buf1);
         err_num  |= clSetKernelArg(float_mat_kernel, 1, sizeof(cl_mem), (void *) &d_buf2);
-        err_num  = clSetKernelArg(float_mat_kernel, 2, sizeof(cl_mem), (void *) &d_buf1b);
+        err_num  |= clSetKernelArg(float_mat_kernel, 2, sizeof(cl_mem), (void *) &d_buf1b);
         err_num  |= clSetKernelArg(float_mat_kernel, 3, sizeof(cl_mem), (void *) &d_buf2b);
+        err_num  |= clSetKernelArg(float_mat_kernel, 4, sizeof(cl_int), (void *) &kernelNCols);
         if (err_num != CL_SUCCESS)
         {
             cout << "kernel arg set fail" << endl;
