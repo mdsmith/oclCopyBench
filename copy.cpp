@@ -19,9 +19,11 @@
 //#define BUF_SIZE 32768
 //#define BUF_SIZE 65536
 //#define BUF_SIZE 131072
-#define BUF_SIZE 64*2048
+#define NROWS 2048
+//#define BUF_SIZE 64*2048
+#define BUF_SIZE 64*NROWS
 //#define MAT_SIZE1 64*2048*2
-#define MAT_SIZE1 64*2048*2
+#define MAT_SIZE1 64*NROWS*2
 #define MAT_SIZE2 64*64
 #define VERBOSITY_LEVEL 2
 #define REPS 1000
@@ -221,7 +223,8 @@ int main()
     float* mat1e = new float[MAT_SIZE1];
     float* mat2 = new float[MAT_SIZE2];
     float* mat2e = new float[MAT_SIZE2];
-    int nRows = 2048;
+    //int nRows = 2048;
+    int nRows = NROWS;
     int nCols = 64;
     int m = 64;
     for (int i = 0; i < MAT_SIZE2; i++) {
