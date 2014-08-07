@@ -83,7 +83,9 @@ __kernel void floatMatLocalTest(__global float* buf1,
 __kernel void floatMatTiledTest(__global float* buf1,
                                 __global int* buf2,
                                 __global float* buf1b,
-                                __global int* buf2b
+                                __global int* buf2b,
+                                int block_number,
+                                int block_size
                                 )
 {
   __local float aScratch[256];
@@ -93,12 +95,27 @@ __kernel void floatMatTiledTest(__global float* buf1,
   // we're using half of buf1 for source, half for sink, global work size is equal to half buf1 size
   int store_index = get_global_size(0) + (groupI/4)*64*16 + (groupI%4)*16 + (localI/16)*16*4 + localI;
   float sum = 0.0;
+  /*
   for (int blockI = 0; blockI < 4; blockI++) {
     aScratch[get_local_id(0)] = buf1[(groupI/4)*64*16 + blockI*16 + (localI/16)*16*4 + localI%16];
     bScratch[get_local_id(0)] = buf1b[(groupI%4)*16*64 + blockI*16 + (localI/16)*16*4 + localI%16];
     barrier(CLK_LOCAL_MEM_FENCE);
     for (int lineI = 0; lineI < 16; lineI++) {
       sum += aScratch[(localI/16) * 16 + lineI] * bScratch[(localI%16) * 16 + lineI];
+    }
+  }
+  */
+  int a_offset = (groupI/4)*64*16 + (localI/16)*16*4 + localI%16;
+  int b_offset = (groupI%4)*16*64 + (localI/16)*16*4 + localI%16;
+  int as_offset = (localI/16) * 16;
+  int bs_offset = (localI%16) * 16;
+  int blockI = 0;
+  for (int blockI = 0; blockI < block_number; blockI++) {
+    aScratch[localI] = buf1[a_offset + blockI*16];
+    bScratch[localI] = buf1b[b_offset + blockI*16];
+    barrier(CLK_LOCAL_MEM_FENCE);
+    for (int lineI = 0; lineI < block_size; lineI++) {
+      sum += aScratch[as_offset + lineI] * bScratch[bs_offset + lineI];
     }
   }
   buf1[store_index] = sum;
