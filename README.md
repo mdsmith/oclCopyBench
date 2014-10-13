@@ -6,14 +6,25 @@ Compile:
 
 make
 
+OR, for the simplified version:
+
+make simple
+
 Usage:
 ------
 
 ./copy
 
+OR, for the simplified version:
+
+./simpleCopy
+
 
 Current Tests:
 --------------
+
+Far more have been added, and there are too many variables to document from
+memory. This should be updated soon.
 
 *   Float + Exponent Arrays
 *   Double + Exponent Arrays
