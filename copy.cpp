@@ -20,7 +20,6 @@
 //#define BUF_SIZE 65536
 //#define BUF_SIZE 131072
 #define BUF_SIZE 64*2048
-//#define MAT_SIZE1 64*2048*2
 #define MAT_SIZE1 64*2048*2
 #define MAT_SIZE2 64*64
 #define VERBOSITY_LEVEL 2
@@ -653,7 +652,7 @@ int main()
     gettimeofday(&t2, NULL);
     runtime += (t2.tv_sec -t1.tv_sec) * 1000.0;
     runtime += (t2.tv_usec - t1.tv_usec) / 1000.0;
-    cout << "Float_Zero_Three runtime: " << runtime/1000 << endl;
+    cout << "Float_Zero_Three runtime: " << runtime/REPS << endl;
 #endif
 
 #ifdef FLOAT_ZERO_THREE_LOCAL_MAT
@@ -1363,7 +1362,7 @@ int setup_context()
     devices = (cl_device_id *)malloc(dev_count * sizeof(cl_device_id));
     err_num = clGetDeviceIDs(plat, CL_DEVICE_TYPE_GPU, dev_count, devices, NULL);
 
-    device = devices[0]; // XXX set back down to 0
+    device = devices[1]; // XXX set back down to 0
     if (err_num != CL_SUCCESS)
     {
         cout << "Dev fail" << endl;

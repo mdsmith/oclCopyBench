@@ -90,11 +90,28 @@ __kernel void floatMatTiledTest(__global float* buf1,
   int bs_offset = (localI%16) * 16;
   int blockI = 0;
   for (int blockI = 0; blockI < block_number; blockI++) {
+  //for (int blockI = 0; blockI < 4; blockI++) {
     aScratch[localI] = buf1[a_offset + blockI*16];
     bScratch[localI] = buf1b[b_offset + blockI*16];
     barrier(CLK_LOCAL_MEM_FENCE);
-    for (int lineI = 0; lineI < block_size; lineI++) {
+    for (int lineI = 0; lineI < block_size;) {
+    //for (int lineI = 0; lineI < 16; lineI++) {
       sum += aScratch[as_offset + lineI] * bScratch[bs_offset + lineI];
+      lineI++;
+      sum += aScratch[as_offset + lineI] * bScratch[bs_offset + lineI];
+      lineI++;
+      sum += aScratch[as_offset + lineI] * bScratch[bs_offset + lineI];
+      lineI++;
+      sum += aScratch[as_offset + lineI] * bScratch[bs_offset + lineI];
+      lineI++;
+      sum += aScratch[as_offset + lineI] * bScratch[bs_offset + lineI];
+      lineI++;
+      sum += aScratch[as_offset + lineI] * bScratch[bs_offset + lineI];
+      lineI++;
+      sum += aScratch[as_offset + lineI] * bScratch[bs_offset + lineI];
+      lineI++;
+      sum += aScratch[as_offset + lineI] * bScratch[bs_offset + lineI];
+      lineI++;
     }
   }
   buf1[store_index] = sum;

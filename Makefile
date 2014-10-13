@@ -11,7 +11,7 @@ else
 linker_flags = -framework OpenCL
 endif
 
-platform_extras = 
+platform_extras =
 
 ifdef AMDAPPSDKROOT
 platform_includes = $(AMDAPPSDKROOT)/include
@@ -36,6 +36,12 @@ copy.o: copy.cpp
 regular: copy.o
 	$(CXX) -o copy $^ $(linker_flags) -fopenmp
 
+simpleCopy.o: simpleCopy.cpp
+	$(CXX) -c -o simpleCopy.o simpleCopy.cpp $(platform_extras) -O3 -fopenmp
+
+simple: simpleCopy.o
+	$(CXX) -o simpleCopy $^ $(linker_flags) -fopenmp
+
 #$(CXX) $(linker_flags) -o copy $^
 
 ###### ETC ######
@@ -44,4 +50,4 @@ regular: copy.o
 	$(CXX) $(linker_flags) -c -o $@ $<
 
 clean:
-	-rm -f *.o copy
+	-rm -f *.o copy simpleCopy
