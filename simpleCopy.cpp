@@ -3,12 +3,13 @@
 
 #define FLOAT_ZERO_THREE_MAT_TILED
 #define FLOAT_MAT_CPU
+#define NROWS 2048
+#define BUF_SIZE 64*NROWS
 // This is the sitebuffer for the CPU version
-#define BUF_SIZE 64*2048
 // Size of site buffer
 // This is equivalent to a one branch tree with 2048 sites. The *2 is in
 // there because results have to be stored somewhere!
-#define MAT_SIZE1 64*2048*2
+#define MAT_SIZE1 64*NROWS*2
 // Size of transition matrix buffer, for just this one branch
 #define MAT_SIZE2 64*64
 #define VERBOSITY_LEVEL 2
@@ -150,7 +151,7 @@ int main()
     float* mat1e = new float[MAT_SIZE1];
     float* mat2 = new float[MAT_SIZE2];
     float* mat2e = new float[MAT_SIZE2];
-    int nRows = 2048;
+    int nRows = NROWS;
     int nCols = 64;
     int m = 64;
     for (int i = 0; i < MAT_SIZE2; i++) {
@@ -471,7 +472,7 @@ int setup_context()
     devices = (cl_device_id *)malloc(dev_count * sizeof(cl_device_id));
     err_num = clGetDeviceIDs(plat, CL_DEVICE_TYPE_GPU, dev_count, devices, NULL);
 
-    device = devices[1]; // XXX set back down to 0
+    device = devices[0]; // XXX set back down to 0
     if (err_num != CL_SUCCESS)
     {
         cout << "Dev fail" << endl;

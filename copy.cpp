@@ -1366,7 +1366,7 @@ int setup_context()
     devices = (cl_device_id *)malloc(dev_count * sizeof(cl_device_id));
     err_num = clGetDeviceIDs(plat, CL_DEVICE_TYPE_GPU, dev_count, devices, NULL);
 
-    device = devices[1]; // XXX set back down to 0
+    device = devices[0]; // XXX set back down to 0
     if (err_num != CL_SUCCESS)
     {
         cout << "Dev fail" << endl;
